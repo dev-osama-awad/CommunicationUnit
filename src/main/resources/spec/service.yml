@@ -1,0 +1,159 @@
+openapi: 3.0.3
+info:
+  title: Appo-Calc-Interface
+  description: |-
+    This interface definition will be inherited be each terminy applicaiton.
+    It defines the generic approach of:
+      1. collect all information for an appointment
+      2. to pass the data to the process Unit
+      3. to issue the appointment request to the product partner
+  contact:
+    email: dev.osama.awad@gmail.com
+  version: 1.0.11
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+  - url: localhost:8080/rest/v1/terminy
+tags:
+  - name: RequestProcessingUnit
+    description: communication point between the processor and the calculator
+    externalDocs:
+      description: Find out more
+      url: http://swagger.io
+  - name: CommunicationUnit
+    description: every operation needed to dispatch to product partner
+    externalDocs:
+      description: Find out more about our store
+      url: http://swagger.io
+  - name: client
+    description: operation that are accessible to client side.
+    externalDocs:
+      description: Find more about client operations
+      url: http://swagger.io
+paths:
+  /calculator:
+    post:
+      tags:
+        - client
+      summary: entry point to the calculator
+      description: >-
+        calling this will initialize and persist a calculation entity to store
+        all requried information for an appointment
+      operationId: createCalculator
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenRequest'
+        required: true
+      responses:
+        '201':
+          description: Successfully opened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentRequest'
+        '400':
+          description: Invalid input
+        '401':
+          description: Not authenticated
+  /calculator/{processId}:
+    get:
+      tags:
+        - client
+      summary: get calculator by processId
+      description: get calculator by processId
+      operationId: getCalculator
+      parameters:
+        - $ref: '#/components/parameters/ProcessId'
+      responses:
+        '200':
+          description: Content found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Calculator'
+  /calculator/{processId}/submit:
+    post:
+      tags:
+        - RequestProcessingUnit
+      summary: process the appointment data
+      description: >-
+        After collecting all the data, this api will be called from the
+        processor to submit calculations
+      operationId: submitAppointmentRequest
+      parameters:
+        - $ref: '#/components/parameters/ProcessId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+  /calculator/{processId}/issue:
+    post:
+      tags:
+        - CommunicationUnit
+      summary: issue a processed appointment and send to the product partner
+      operationId: issueAppointment
+      parameters:
+        - $ref: '#/components/parameters/ProcessId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRequest'
+        required: true
+      responses:
+        '200':
+          description: Successfully Issued
+        '400':
+          description: Invalid input
+        '401':
+          description: Not authenticated
+  /calculator/{processId}/actualise:
+    put:
+      tags:
+        - RequestProcessingUnit
+      summary: actualise data from calculator and sync with database
+      description: >-
+        this will be called from the processor to validate and actualise the
+        provided data from the calculator
+      operationId: syncWithDataBase
+      parameters:
+        - $ref: '#/components/parameters/ProcessId'
+      responses:
+        '200':
+          description: Successfully actualised
+        '401':
+          description: Not authenticated
+        '409':
+          description: Conflict between data sources
+components:
+  schemas:
+    OpenRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    SubmitRequest:
+      type: object
+    IssueRequest:
+      type: object
+    AppointmentRequest:
+      type: object
+    Calculator:
+      type: object
+  parameters:
+    ProcessId:
+      in: path
+      name: processId
+      schema:
+        type: string
+      required: true
